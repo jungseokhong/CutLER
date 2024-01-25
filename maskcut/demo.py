@@ -17,6 +17,9 @@ from third_party.TokenCut.unsupervised_saliency_detection import metric
 from crf import densecrf
 from maskcut import maskcut
 
+import img_save
+import downsample
+
 # Image transformation applied to all images
 ToTensor = transforms.Compose([transforms.ToTensor(),
                                transforms.Normalize(
@@ -74,6 +77,7 @@ if __name__ == "__main__":
     I = Image.open(args.img_path).convert('RGB')
     width, height = I.size
     pseudo_mask_list = []
+    pseudo_mask_square_list = []
     for idx, bipartition in enumerate(bipartitions):
         # post-process pesudo-masks with CRF
         pseudo_mask = densecrf(np.array(I_new), bipartition)
@@ -92,7 +96,8 @@ if __name__ == "__main__":
         # construct binary pseudo-masks
         pseudo_mask[pseudo_mask < 0] = 0
         pseudo_mask = Image.fromarray(np.uint8(pseudo_mask*255))
-        pseudo_mask = np.asarray(pseudo_mask.resize((width, height)))
+        # pseudo_mask = np.asarray(pseudo_mask.resize((width, height)))
+        pseudo_mask = np.asarray(pseudo_mask) ##
 
         pseudo_mask = pseudo_mask.astype(np.uint8)
         upper = np.max(pseudo_mask)
@@ -100,7 +105,17 @@ if __name__ == "__main__":
         thresh = upper / 2.0
         pseudo_mask[pseudo_mask > thresh] = upper
         pseudo_mask[pseudo_mask <= thresh] = lower
+        pseudo_mask_square_list.append(pseudo_mask) ##
+
+        pseudo_mask = np.asarray(Image.fromarray(pseudo_mask).resize((width, height))) ##
         pseudo_mask_list.append(pseudo_mask)
+
+    id = 0
+    for pseudo_mask in pseudo_mask_square_list:
+        print(f'pseudo_mask shape: {pseudo_mask.shape}')
+        down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask)
+        img_save.save_numpy_array_as_image(down_pseudo_mask, "mask"+str(id)+".jpg")
+        id = id + 1
 
     input = np.array(I)
     for pseudo_mask in pseudo_mask_list:
