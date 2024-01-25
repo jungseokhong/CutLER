@@ -171,8 +171,7 @@ def maskcut(img_path, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) 
     bipartitions += bipartition
     eigvecs += eigvec
 
-    ## added feat as additional return value
-    return bipartitions, eigvecs, I_new, feat
+    return bipartitions, eigvecs, I_new
 
 def resize_binary_mask(array, new_size):
     image = Image.fromarray(array.astype(np.uint8)*255)
