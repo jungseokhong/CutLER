@@ -71,7 +71,7 @@ if __name__ == "__main__":
     if not args.cpu:
         backbone.cuda()
 
-    bipartitions, _, I_new = maskcut(args.img_path, backbone, args.patch_size, args.tau, \
+    bipartitions, _, I_new, feat = maskcut(args.img_path, backbone, args.patch_size, args.tau, \
         N=args.N, fixed_size=args.fixed_size, cpu=args.cpu)
 
     I = Image.open(args.img_path).convert('RGB')
@@ -114,6 +114,7 @@ if __name__ == "__main__":
     for pseudo_mask in pseudo_mask_square_list:
         print(f'pseudo_mask shape: {pseudo_mask.shape}')
         down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask)
+        print(down_pseudo_mask)
         img_save.save_numpy_array_as_image(down_pseudo_mask, "mask"+str(id)+".jpg")
         id = id + 1
 
