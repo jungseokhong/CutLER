@@ -20,14 +20,14 @@ from scipy import ndimage
 from scipy.linalg import eigh
 import json
 
-import dino
+from CutLER.maskcut import dino ##
 # modfied by Xudong Wang based on third_party/TokenCut
-from third_party.TokenCut.unsupervised_saliency_detection import utils, metric
-from third_party.TokenCut.unsupervised_saliency_detection.object_discovery import detect_box
+from CutLER.third_party.TokenCut.unsupervised_saliency_detection import utils, metric ##
+from CutLER.third_party.TokenCut.unsupervised_saliency_detection.object_discovery import detect_box ##
 # bilateral_solver codes are modfied based on https://github.com/poolio/bilateral_solver/blob/master/notebooks/bilateral_solver.ipynb
 # from third_party.TokenCut.unsupervised_saliency_detection.bilateral_solver import BilateralSolver, BilateralGrid
 # crf codes are are modfied based on https://github.com/lucasb-eyer/pydensecrf/blob/master/pydensecrf/tests/test_dcrf.py
-from crf import densecrf
+from CutLER.maskcut.crf import densecrf ##
 
 # Image transformation applied to all images
 ToTensor = transforms.Compose([transforms.ToTensor(),

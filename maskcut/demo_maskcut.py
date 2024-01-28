@@ -12,13 +12,13 @@ from torchvision import transforms
 from scipy import ndimage
 from detectron2.utils.colormap import random_color
 
-import dino # model
-from third_party.TokenCut.unsupervised_saliency_detection import metric
-from crf import densecrf
-from maskcut_v2 import maskcut, maskcut_img
+from CutLER.maskcut import dino # model ##
+from CutLER.third_party.TokenCut.unsupervised_saliency_detection import metric ##
+from CutLER.maskcut.crf import densecrf ##
+from CutLER.maskcut.maskcut_v2 import maskcut, maskcut_img ##
 
-import img_save
-import downsample
+from CutLER.maskcut import img_save
+from CutLER.maskcut import downsample
 from typing import List
 
 # Image transformation applied to all images
