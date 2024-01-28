@@ -171,7 +171,27 @@ def maskcut(img_path, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) 
     bipartitions += bipartition
     eigvecs += eigvec
 
-    return bipartitions, eigvecs, I_new
+    ## added feat as additional return value
+    return bipartitions, eigvecs, I_new, feat
+
+def maskcut_img(img, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) :
+    I = img #.convert('RGB')
+    bipartitions, eigvecs = [], []
+
+    I_new = I.resize((int(fixed_size), int(fixed_size)), PIL.Image.LANCZOS)
+    I_resize, w, h, feat_w, feat_h = utils.resize_pil(I_new, patch_size)
+
+    tensor = ToTensor(I_resize).unsqueeze(0)
+    if not cpu: tensor = tensor.cuda()
+    feat = backbone(tensor)[0]
+
+    _, bipartition, eigvec = maskcut_forward(feat, [feat_h, feat_w], [patch_size, patch_size], [h,w], tau, N=N, cpu=cpu)
+
+    bipartitions += bipartition
+    eigvecs += eigvec
+
+    ## added feat as additional return value
+    return bipartitions, eigvecs, I_new, feat
 
 def resize_binary_mask(array, new_size):
     image = Image.fromarray(array.astype(np.uint8)*255)

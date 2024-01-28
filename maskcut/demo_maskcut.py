@@ -15,10 +15,11 @@ from detectron2.utils.colormap import random_color
 import dino # model
 from third_party.TokenCut.unsupervised_saliency_detection import metric
 from crf import densecrf
-from maskcut_v2 import maskcut
+from maskcut_v2 import maskcut, maskcut_img
 
 import img_save
 import downsample
+from typing import List
 
 # Image transformation applied to all images
 ToTensor = transforms.Compose([transforms.ToTensor(),
@@ -31,6 +32,129 @@ def vis_mask(input, mask, mask_color) :
     rgb = np.copy(input)
     rgb[fg] = (rgb[fg] * 0.3 + np.array(mask_color) * 0.7).astype(np.uint8)
     return Image.fromarray(rgb)
+
+
+def find_centroid(pseudo_mask):
+    """
+    Find the centroid of a binary mask.
+
+    Args:
+    pseudo_mask (numpy.ndarray): A 2D numpy array where non-zero values represent the mask.
+
+    Returns:
+    tuple: The (x, y) coordinates of the centroid.
+    """
+    # Ensure pseudo_mask is a binary mask
+    pseudo_mask = np.where(pseudo_mask > 0, 1, 0)
+
+    # Calculate the moments of the binary image
+    M = ndimage.measurements.center_of_mass(pseudo_mask)
+
+    # The centroid is the center of mass
+    centroid = (int(M[1]), int(M[0]))  # (x, y) format
+    return centroid
+
+def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, N, fixed_size, cpu, output_path=None):
+
+    for img in imgs:
+
+        bipartitions, _, I_new, feat = maskcut_img(img, backbone, patch_size, tau, \
+            N=N, fixed_size=fixed_size, cpu=cpu)
+
+        I = img.convert('RGB')
+        width, height = I.size
+        pseudo_mask_list = []
+        pseudo_mask_square_list = []
+        latent_centroids = []
+        down_pseudo_mask_list = []
+        pos_centroids = []
+
+        for idx, bipartition in enumerate(bipartitions):
+            # post-process pesudo-masks with CRF
+            pseudo_mask = densecrf(np.array(I_new), bipartition)
+            pseudo_mask = ndimage.binary_fill_holes(pseudo_mask>=0.5)
+
+            # filter out the mask that have a very different pseudo-mask after the CRF
+            if not cpu:
+                mask1 = torch.from_numpy(bipartition).cuda()
+                mask2 = torch.from_numpy(pseudo_mask).cuda()
+            else:
+                mask1 = torch.from_numpy(bipartition)
+                mask2 = torch.from_numpy(pseudo_mask)
+            if metric.IoU(mask1, mask2) < 0.5:
+                pseudo_mask = pseudo_mask * -1
+
+            # construct binary pseudo-masks
+            pseudo_mask[pseudo_mask < 0] = 0
+            pseudo_mask = Image.fromarray(np.uint8(pseudo_mask*255))
+            # pseudo_mask = np.asarray(pseudo_mask.resize((width, height)))
+            pseudo_mask = np.asarray(pseudo_mask) ##
+
+            pseudo_mask = pseudo_mask.astype(np.uint8)
+            upper = np.max(pseudo_mask)
+            lower = np.min(pseudo_mask)
+            thresh = upper / 2.0
+            pseudo_mask[pseudo_mask > thresh] = upper
+            pseudo_mask[pseudo_mask <= thresh] = lower
+            pseudo_mask_square_list.append(pseudo_mask) ##
+
+            pseudo_mask = np.asarray(Image.fromarray(pseudo_mask).resize((width, height))) ##
+            # print(f'pseudo_mask shape: {pseudo_mask.shape} before list')
+
+            pseudo_mask_list.append(pseudo_mask)
+
+        id = 0
+        ## feat is torch.size([384,3600])
+        # print(f'feat.shape: {feat.shape} {feat}')
+        for pseudo_mask in pseudo_mask_square_list:
+            print(f'pseudo_mask shape: {pseudo_mask.shape}')
+            down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask)
+            down_pseudo_mask_list.append(down_pseudo_mask)
+            print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
+
+            # Flatten the downsampled mask and find non-zero indices
+            flat_mask = down_pseudo_mask.flatten()
+            non_zero_indices = np.nonzero(flat_mask)[0]
+            print(f'non_zero_indices shape: {non_zero_indices.shape}')
+
+            # Extract features from feat using non-zero indices
+            # Assuming feat is a tensor of shape [feature_dim, num_patches]
+            if non_zero_indices.shape[0] > 0:
+                extracted_features = feat[:, non_zero_indices]
+                print(f'extracted_features shape: {extracted_features.shape}')
+
+                # Computing the mean of extracted features
+                mean_features = torch.mean(extracted_features, dim=1)
+                latent_centroids.append(mean_features)
+                # print(f'mean_features shape: {mean_features.shape}')
+
+                img_save.save_numpy_array_as_image(down_pseudo_mask, "mask"+str(id)+".jpg")
+            id = id + 1
+
+        input = np.array(I)
+        binary_mask = np.zeros((height, width), dtype=np.uint8)
+
+        for pseudo_mask in pseudo_mask_list:
+
+            input = vis_mask(input, pseudo_mask, random_color(rgb=True))
+
+            if len(np.nonzero(pseudo_mask.flatten())[0])>1:
+                centroid = find_centroid(pseudo_mask) # return x, y
+                x_percent = centroid[0]/pseudo_mask.shape[1] ## X?
+                y_percent = centroid[1]/pseudo_mask.shape[0] ## Y?
+                pos_centroids.append([x_percent, y_percent])  
+                print(f'pseudo_mask shape: {pseudo_mask.shape}')
+                pseudo_mask_bool = pseudo_mask.astype(bool)
+                binary_mask += pseudo_mask_bool
+            if output_path != None:
+                input.save(os.path.join(output_path, "demo.jpg"))
+
+        img_save.save_numpy_array_as_image(binary_mask*255, "binary_mask.jpg")
+        segmentation_masks = [binary_mask]
+
+    return segmentation_masks, input, latent_centroids, pos_centroids 
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('MaskCut Demo')
@@ -70,6 +194,14 @@ if __name__ == "__main__":
     backbone.eval()
     if not args.cpu:
         backbone.cuda()
+
+    I = Image.open(args.img_path).convert('RGB')
+    imgs = [I]
+    segmentation_masks, input, latent_centroids, pos_centroids  =maskcut_demo(None, imgs, backbone, args.patch_size, 
+                                                                    args.tau, args.N, args.fixed_size, args.cpu, output_path=None)
+
+
+'''
 
     bipartitions, _, I_new, feat = maskcut(args.img_path, backbone, args.patch_size, args.tau, \
         N=args.N, fixed_size=args.fixed_size, cpu=args.cpu)
@@ -112,7 +244,7 @@ if __name__ == "__main__":
 
     id = 0
     ## feat is torch.size([384,3600])
-    print(f'feat.shape: {feat.shape} {feat}')
+    # print(f'feat.shape: {feat.shape} {feat}')
     for pseudo_mask in pseudo_mask_square_list:
         print(f'pseudo_mask shape: {pseudo_mask.shape}')
         down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask)
@@ -140,3 +272,5 @@ if __name__ == "__main__":
     for pseudo_mask in pseudo_mask_list:
         input = vis_mask(input, pseudo_mask, random_color(rgb=True))
     input.save(os.path.join(args.output_path, "demo.jpg"))
+
+'''
