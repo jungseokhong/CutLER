@@ -87,6 +87,23 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
 
             # construct binary pseudo-masks
             pseudo_mask[pseudo_mask < 0] = 0
+
+            # Heuristic filtering
+            # New code to filter out large pseudo_masks
+            if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
+                continue  # Skip this mask if it's larger than 5% of total pixels
+            
+            # Calculate the number of rows to consider (40% of total rows)
+            num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
+
+            # Calculate the sum of the first 40% of rows
+            if np.sum(pseudo_mask[:num_rows_to_consider]) > 100:
+                continue 
+
+            # on the floor and sum is greater than 130...
+            # maybe on the floor can be filtered by indices..
+
+
             pseudo_mask = Image.fromarray(np.uint8(pseudo_mask*255))
             # pseudo_mask = np.asarray(pseudo_mask.resize((width, height)))
             pseudo_mask = np.asarray(pseudo_mask) ##
@@ -100,7 +117,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             pseudo_mask_square_list.append(pseudo_mask) ##
 
             pseudo_mask = np.asarray(Image.fromarray(pseudo_mask).resize((width, height))) ##
-            # print(f'pseudo_mask shape: {pseudo_mask.shape} before list')
+            print(f'pseudo_mask shape: {pseudo_mask.shape} before list')
 
             pseudo_mask_list.append(pseudo_mask)
 
@@ -109,9 +126,9 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
         # print(f'feat.shape: {feat.shape} {feat}')
         for pseudo_mask in pseudo_mask_square_list:
             print(f'pseudo_mask shape: {pseudo_mask.shape}')
-            down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask, (32,32)) ######
+            down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask, (60,60)) ######
             down_pseudo_mask_list.append(down_pseudo_mask)
-            print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
+            # print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
 
             # Flatten the downsampled mask and find non-zero indices
             flat_mask = down_pseudo_mask.flatten()
@@ -125,6 +142,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 print(f'extracted_features shape: {extracted_features.shape}')
 
                 # Computing the mean of extracted features
+                # [TODO] potentially add clustering here
                 mean_features = torch.mean(extracted_features, dim=1)
                 latent_centroids.append(mean_features)
                 # print(f'mean_features shape: {mean_features.shape}')
@@ -138,7 +156,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
         for pseudo_mask in pseudo_mask_list:
 
             input = vis_mask(input, pseudo_mask, random_color(rgb=True))
-
+            print(f'pseudo_mask shape before flatten: {pseudo_mask.shape}')
             if len(np.nonzero(pseudo_mask.flatten())[0])>1:
                 centroid = find_centroid(pseudo_mask) # return x, y
                 x_percent = centroid[0]/pseudo_mask.shape[1] ## X?
@@ -152,6 +170,9 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
 
         img_save.save_numpy_array_as_image(binary_mask*255, "binary_mask.jpg")
         segmentation_masks = [binary_mask]
+
+        # To guarantee that input is a PIL image
+        input = Image.fromarray(np.uint8(input))
 
     return segmentation_masks, input, latent_centroids, pos_centroids 
 
