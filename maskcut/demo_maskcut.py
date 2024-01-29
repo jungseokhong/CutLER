@@ -16,6 +16,7 @@ from CutLER.maskcut import dino # model ##
 from CutLER.third_party.TokenCut.unsupervised_saliency_detection import metric ##
 from CutLER.maskcut.crf import densecrf ##
 from CutLER.maskcut.maskcut_v2 import maskcut, maskcut_img ##
+# from CutLER.maskcut.maskcut_dinov2 import maskcut, maskcut_img ##
 
 from CutLER.maskcut import img_save
 from CutLER.maskcut import downsample
@@ -108,7 +109,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
         # print(f'feat.shape: {feat.shape} {feat}')
         for pseudo_mask in pseudo_mask_square_list:
             print(f'pseudo_mask shape: {pseudo_mask.shape}')
-            down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask)
+            down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask, (32,32)) ######
             down_pseudo_mask_list.append(down_pseudo_mask)
             print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
 

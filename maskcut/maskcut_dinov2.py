@@ -38,6 +38,7 @@ ToTensor = transforms.Compose([transforms.ToTensor(),
 def get_affinity_matrix(feats, tau, eps=1e-5):
     # get affinity matrix via measuring patch-wise cosine similarity
     feats = F.normalize(feats, p=2, dim=0)
+    # print(f'feats shape: {feats.shape}')
     A = (feats.transpose(0,1) @ feats).cpu().numpy()
     # convert the affinity matrix to a binary one.
     A = A > tau
@@ -155,7 +156,7 @@ def maskcut_forward(feats, dims, scales, init_image_size, tau=0, N=3, cpu=False)
 
     return seed, bipartitions, eigvecs
 
-def maskcut(img_path, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) :
+def maskcut(img_path, backbone,patch_size, tau, N=1, fixed_size=224, cpu=False) :
     I = Image.open(img_path).convert('RGB')
     bipartitions, eigvecs = [], []
 
@@ -165,6 +166,8 @@ def maskcut(img_path, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) 
     tensor = ToTensor(I_resize).unsqueeze(0)
     if not cpu: tensor = tensor.cuda()
     feat = backbone(tensor)[0]
+    # feat = backbone.forward_features(tensor)
+    # print(f'feat shape: {feat.shape}')
 
     _, bipartition, eigvec = maskcut_forward(feat, [feat_h, feat_w], [patch_size, patch_size], [h,w], tau, N=N, cpu=cpu)
 
@@ -174,7 +177,7 @@ def maskcut(img_path, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) 
     ## added feat as additional return value
     return bipartitions, eigvecs, I_new, feat
 
-def maskcut_img(img, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) :
+def maskcut_img(img, backbone,patch_size, tau, N=1, fixed_size=448, cpu=False) :
     I = img #.convert('RGB')
     bipartitions, eigvecs = [], []
 
@@ -183,8 +186,10 @@ def maskcut_img(img, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) :
 
     tensor = ToTensor(I_resize).unsqueeze(0)
     if not cpu: tensor = tensor.cuda()
-    feat = backbone(tensor)[0]
-    print(f'feat shape: {feat.shape}, feat_h: {feat_h}, feat_w: {feat_w}, h: {h}, w: {w}')
+    feat = backbone.forward_features(tensor)["x_norm_patchtokens"]
+    # feat = backbone.forward_features(tensor)
+    feat = feat.view(feat.shape[-1], -1)
+    print(f'feat shape: {feat.shape}')
     _, bipartition, eigvec = maskcut_forward(feat, [feat_h, feat_w], [patch_size, patch_size], [h,w], tau, N=N, cpu=cpu)
 
     bipartitions += bipartition
