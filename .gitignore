@@ -84,6 +84,7 @@ videocutler/pretrain
 
 # demo results
 demos/
+frames/
 
 # IPython
 profile_default/
