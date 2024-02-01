@@ -89,14 +89,20 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             pseudo_mask[pseudo_mask < 0] = 0
 
             # Heuristic filtering
+
+            # Check if edge values of pseudo_mask are 1
+            if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
+            np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
+                continue  # Skip this mask if edge values are 1
+
             # New code to filter out large pseudo_masks
             if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
                 continue  # Skip this mask if it's larger than 5% of total pixels
             
-            # Calculate the number of rows to consider (40% of total rows)
+            # Calculate the number of rows to consider (30% of total rows)
             num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
 
-            # Calculate the sum of the first 40% of rows
+            # Calculate the sum of the first 30% of rows
             if np.sum(pseudo_mask[:num_rows_to_consider]) > 100:
                 continue 
 
