@@ -16,10 +16,20 @@ from CutLER.maskcut import dino # model ##
 from CutLER.third_party.TokenCut.unsupervised_saliency_detection import metric ##
 from CutLER.maskcut.crf import densecrf ##
 from CutLER.maskcut.maskcut_v2 import maskcut, maskcut_img ##
-# from CutLER.maskcut.maskcut_dinov2 import maskcut, maskcut_img ##
+from CutLER.maskcut.maskcut_dinov2 import maskcut, maskcut_img ##
 
 from CutLER.maskcut import img_save
 from CutLER.maskcut import downsample
+
+# import dino # model ##
+# from third_party.TokenCut.unsupervised_saliency_detection import metric ##
+# from crf import densecrf ##
+# from maskcut_v2 import maskcut, maskcut_img ##
+# from CutLER.maskcut.maskcut_dinov2 import maskcut, maskcut_img ##
+
+# import img_save
+# import downsample
+
 from typing import List
 
 # Image transformation applied to all images
@@ -91,10 +101,10 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             # Heuristic filtering
 
             # Check if edge values of pseudo_mask are 1
-            if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
-            np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
-                print("Edge values are 1")
-                continue  # Skip this mask if edge values are 1
+            # if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
+            # np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
+            #     print("Edge values are 1")
+            #     continue  # Skip this mask if edge values are 1
 
             # New code to filter out large pseudo_masks
             if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
@@ -105,9 +115,9 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
 
             # Calculate the sum of the first 30% of rows
-            if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
-                print("Sum of first 30% of rows is greater than 50")
-                continue 
+            # if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
+            #     print("Sum of first 30% of rows is greater than 50")
+            #     continue 
 
             # on the floor and sum is greater than 130...
             # maybe on the floor can be filtered by indices..
@@ -130,52 +140,97 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
 
             pseudo_mask_list.append(pseudo_mask)
 
-        id = 0
-        ## feat is torch.size([384,3600])
-        # print(f'feat.shape: {feat.shape} {feat}')
-        for pseudo_mask in pseudo_mask_square_list:
-            print(f'pseudo_mask shape: {pseudo_mask.shape}')
-            down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask, (60,60)) ######
-            down_pseudo_mask_list.append(down_pseudo_mask)
-            # print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
+        
 
-            # Flatten the downsampled mask and find non-zero indices
-            flat_mask = down_pseudo_mask.flatten()
-            non_zero_indices = np.nonzero(flat_mask)[0]
-            print(f'non_zero_indices shape: {non_zero_indices.shape}')
 
-            # Extract features from feat using non-zero indices
-            # Assuming feat is a tensor of shape [feature_dim, num_patches]
-            if non_zero_indices.shape[0] > 0:
-                extracted_features = feat[:, non_zero_indices]
-                print(f'extracted_features shape: {extracted_features.shape}')
-
-                # Computing the mean of extracted features
-                # [TODO] potentially add clustering here
-                mean_features = torch.mean(extracted_features, dim=1)
-                latent_centroids.append(mean_features)
-                # print(f'mean_features shape: {mean_features.shape}')
-
-                img_save.save_numpy_array_as_image(down_pseudo_mask, "mask"+str(id)+".jpg")
-            id = id + 1
-
+        combined_masks = zip(pseudo_mask_square_list, pseudo_mask_list)  # Combine the lists for parallel processing
         input = np.array(I)
         binary_mask = np.zeros((height, width), dtype=np.uint8)
 
-        for pseudo_mask in pseudo_mask_list:
+        id = 0  # Reset id for each image in imgs
+        for square_pseudo_mask, resized_pseudo_mask in combined_masks:
+            # Process square_pseudo_mask for downsampling and feature extraction
+            print(f'square_pseudo_mask shape: {square_pseudo_mask.shape}')
+            print(f'resized_pseudo_mask shape: {resized_pseudo_mask.shape}')
+            down_pseudo_mask = downsample.downsample_numpy_array(square_pseudo_mask, (60,60))
+            down_pseudo_mask_list.append(down_pseudo_mask)
+            flat_mask = down_pseudo_mask.flatten()
+            non_zero_indices = np.nonzero(flat_mask)[0]
+            if non_zero_indices.shape[0] > 0:
+                extracted_features = feat[:, non_zero_indices]
+                mean_features = torch.mean(extracted_features, dim=1)
+                latent_centroids.append(mean_features)
+                img_save.save_numpy_array_as_image(down_pseudo_mask, "square_mask"+str(id)+"_"+str(non_zero_indices.shape[0])+".jpg")
 
-            input = vis_mask(input, pseudo_mask, random_color(rgb=True))
-            print(f'pseudo_mask shape before flatten: {pseudo_mask.shape}')
-            if len(np.nonzero(pseudo_mask.flatten())[0])>1:
-                centroid = find_centroid(pseudo_mask) # return x, y
-                x_percent = centroid[0]/pseudo_mask.shape[1] ## X?
-                y_percent = centroid[1]/pseudo_mask.shape[0] ## Y?
-                pos_centroids.append([x_percent, y_percent])  
-                print(f'pseudo_mask shape: {pseudo_mask.shape}')
-                pseudo_mask_bool = pseudo_mask.astype(bool)
+                centroid = find_centroid(resized_pseudo_mask)  # returns x, y
+                x_percent = centroid[0] / resized_pseudo_mask.shape[1]  # X?
+                y_percent = centroid[1] / resized_pseudo_mask.shape[0]  # Y?
+                pos_centroids.append([x_percent, y_percent])
+                img_save.save_numpy_array_as_image(resized_pseudo_mask, "resized_mask"+str(id)+"x"+str(x_percent)+"y"+str(y_percent)+"_"+str(non_zero_indices.shape[0])+".jpg")
+                pseudo_mask_bool = resized_pseudo_mask.astype(bool)
                 binary_mask += pseudo_mask_bool
-            if output_path != None:
-                input.save(os.path.join(output_path, "demo.jpg"))
+
+            # Process resized_pseudo_mask for visualization and centroid calculation
+
+            # if len(np.nonzero(resized_pseudo_mask.flatten())[0]) > 1:
+            #     centroid = find_centroid(resized_pseudo_mask)  # returns x, y
+            #     x_percent = centroid[0] / resized_pseudo_mask.shape[1]  # X?
+            #     y_percent = centroid[1] / resized_pseudo_mask.shape[0]  # Y?
+            #     pos_centroids.append([x_percent, y_percent])
+            #     img_save.save_numpy_array_as_image(resized_pseudo_mask, "resized_mask"+str(id)+".jpg")
+            #     pseudo_mask_bool = resized_pseudo_mask.astype(bool)
+            #     binary_mask += pseudo_mask_bool
+
+            id += 1        
+        
+        
+        
+        # id = 0
+        # ## feat is torch.size([384,3600])
+        # # print(f'feat.shape: {feat.shape} {feat}')
+        # for pseudo_mask in pseudo_mask_square_list:
+        #     print(f'pseudo_mask shape: {pseudo_mask.shape}')
+        #     down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask, (60,60)) ######
+        #     down_pseudo_mask_list.append(down_pseudo_mask)
+        #     # print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
+
+        #     # Flatten the downsampled mask and find non-zero indices
+        #     flat_mask = down_pseudo_mask.flatten()
+        #     non_zero_indices = np.nonzero(flat_mask)[0]
+        #     print(f'non_zero_indices shape: {non_zero_indices.shape}')
+
+        #     # Extract features from feat using non-zero indices
+        #     # Assuming feat is a tensor of shape [feature_dim, num_patches]
+        #     if non_zero_indices.shape[0] > 0:
+        #         extracted_features = feat[:, non_zero_indices]
+        #         print(f'extracted_features shape: {extracted_features.shape}')
+
+        #         # Computing the mean of extracted features
+        #         # [TODO] potentially add clustering here
+        #         mean_features = torch.mean(extracted_features, dim=1)
+        #         latent_centroids.append(mean_features)
+        #         # print(f'mean_features shape: {mean_features.shape}')
+
+        #         img_save.save_numpy_array_as_image(down_pseudo_mask, "mask"+str(id)+".jpg")
+        #     id = id + 1
+
+        # input = np.array(I)
+        # binary_mask = np.zeros((height, width), dtype=np.uint8)
+
+        # for pseudo_mask in pseudo_mask_list:
+
+        #     input = vis_mask(input, pseudo_mask, random_color(rgb=True))
+        #     print(f'pseudo_mask shape before flatten: {pseudo_mask.shape}')
+        #     if len(np.nonzero(pseudo_mask.flatten())[0])>1:
+        #         centroid = find_centroid(pseudo_mask) # return x, y
+        #         x_percent = centroid[0]/pseudo_mask.shape[1] ## X?
+        #         y_percent = centroid[1]/pseudo_mask.shape[0] ## Y?
+        #         pos_centroids.append([x_percent, y_percent])  
+        #         print(f'pseudo_mask shape: {pseudo_mask.shape}')
+        #         pseudo_mask_bool = pseudo_mask.astype(bool)
+        #         binary_mask += pseudo_mask_bool
+        #     if output_path != None:
+        #         input.save(os.path.join(output_path, "demo.jpg"))
 
         img_save.save_numpy_array_as_image(binary_mask*255, "binary_mask.jpg")
         segmentation_masks = [binary_mask]
