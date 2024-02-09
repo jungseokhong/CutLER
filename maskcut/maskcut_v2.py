@@ -184,7 +184,7 @@ def maskcut_img(img, backbone,patch_size, tau, N=1, fixed_size=480, cpu=False) :
     tensor = ToTensor(I_resize).unsqueeze(0)
     if not cpu: tensor = tensor.cuda()
     feat = backbone(tensor)[0]
-    print(f'feat shape: {feat.shape}, feat_h: {feat_h}, feat_w: {feat_w}, h: {h}, w: {w}')
+    # print(f'feat shape: {feat.shape}, feat_h: {feat_h}, feat_w: {feat_w}, h: {h}, w: {w}')
     _, bipartition, eigvec = maskcut_forward(feat, [feat_h, feat_w], [patch_size, patch_size], [h,w], tau, N=N, cpu=cpu)
 
     bipartitions += bipartition

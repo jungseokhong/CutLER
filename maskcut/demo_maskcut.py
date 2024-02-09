@@ -126,7 +126,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             pseudo_mask_square_list.append(pseudo_mask) ##
 
             pseudo_mask = np.asarray(Image.fromarray(pseudo_mask).resize((width, height))) ##
-            print(f'pseudo_mask shape: {pseudo_mask.shape} before list')
+            # print(f'pseudo_mask shape: {pseudo_mask.shape} before list')
 
             pseudo_mask_list.append(pseudo_mask)
 
@@ -134,7 +134,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
         ## feat is torch.size([384,3600])
         # print(f'feat.shape: {feat.shape} {feat}')
         for pseudo_mask in pseudo_mask_square_list:
-            print(f'pseudo_mask shape: {pseudo_mask.shape}')
+            # print(f'pseudo_mask shape: {pseudo_mask.shape}')
             down_pseudo_mask =downsample.downsample_numpy_array(pseudo_mask, (60,60)) ######
             down_pseudo_mask_list.append(down_pseudo_mask)
             # print(f'down_pseudo_mask shape: {down_pseudo_mask.shape}')
@@ -142,13 +142,13 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             # Flatten the downsampled mask and find non-zero indices
             flat_mask = down_pseudo_mask.flatten()
             non_zero_indices = np.nonzero(flat_mask)[0]
-            print(f'non_zero_indices shape: {non_zero_indices.shape}')
+            # print(f'non_zero_indices shape: {non_zero_indices.shape}')
 
             # Extract features from feat using non-zero indices
             # Assuming feat is a tensor of shape [feature_dim, num_patches]
             if non_zero_indices.shape[0] > 0:
                 extracted_features = feat[:, non_zero_indices]
-                print(f'extracted_features shape: {extracted_features.shape}')
+                # print(f'extracted_features shape: {extracted_features.shape}')
 
                 # Computing the mean of extracted features
                 # [TODO] potentially add clustering here
@@ -165,13 +165,13 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
         for pseudo_mask in pseudo_mask_list:
 
             input = vis_mask(input, pseudo_mask, random_color(rgb=True))
-            print(f'pseudo_mask shape before flatten: {pseudo_mask.shape}')
+            # print(f'pseudo_mask shape before flatten: {pseudo_mask.shape}')
             if len(np.nonzero(pseudo_mask.flatten())[0])>1:
                 centroid = find_centroid(pseudo_mask) # return x, y
                 x_percent = centroid[0]/pseudo_mask.shape[1] ## X?
                 y_percent = centroid[1]/pseudo_mask.shape[0] ## Y?
                 pos_centroids.append([x_percent, y_percent])  
-                print(f'pseudo_mask shape: {pseudo_mask.shape}')
+                # print(f'pseudo_mask shape: {pseudo_mask.shape}')
                 pseudo_mask_bool = pseudo_mask.astype(bool)
                 binary_mask += pseudo_mask_bool
             if output_path != None:
