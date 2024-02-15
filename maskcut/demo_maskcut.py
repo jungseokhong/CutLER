@@ -32,6 +32,10 @@ from CutLER.maskcut import downsample
 
 from typing import List
 
+from umap import UMAP
+umap_reducer = UMAP(n_components=1, random_state=42)
+
+
 # Image transformation applied to all images
 ToTensor = transforms.Compose([transforms.ToTensor(),
                                transforms.Normalize(
@@ -158,8 +162,15 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             non_zero_indices = np.nonzero(flat_mask)[0]
             if non_zero_indices.shape[0] > 0:
                 extracted_features = feat[:, non_zero_indices]
-                mean_features = torch.mean(extracted_features, dim=1)
-                latent_centroids.append(mean_features)
+                ## this is for the mean of the features
+                # mean_features = torch.mean(extracted_features, dim=1)
+                # latent_centroids.append(mean_features)
+
+                ## this is for the UMAP of the features
+                umap_features = umap_reducer.fit_transform(extracted_features)
+                umap_features = torch.from_numpy(umap_features.flatten())
+                latent_centroids.append(umap_features)
+
                 img_save.save_numpy_array_as_image(down_pseudo_mask, "square_mask"+str(id)+"_"+str(non_zero_indices.shape[0])+".jpg")
 
                 centroid = find_centroid(resized_pseudo_mask)  # returns x, y
