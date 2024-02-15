@@ -16,7 +16,7 @@ from CutLER.maskcut import dino # model ##
 from CutLER.third_party.TokenCut.unsupervised_saliency_detection import metric ##
 from CutLER.maskcut.crf import densecrf ##
 from CutLER.maskcut.maskcut_v2 import maskcut, maskcut_img ##
-from CutLER.maskcut.maskcut_dinov2 import maskcut, maskcut_img ##
+# from CutLER.maskcut.maskcut_dinov2 import maskcut, maskcut_img ##
 
 from CutLER.maskcut import img_save
 from CutLER.maskcut import downsample
@@ -105,10 +105,10 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             # Heuristic filtering
 
             # Check if edge values of pseudo_mask are 1
-            # if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
-            # np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
-            #     print("Edge values are 1")
-            #     continue  # Skip this mask if edge values are 1
+            if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
+            np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
+                print("Edge values are 1")
+                continue  # Skip this mask if edge values are 1
 
             # New code to filter out large pseudo_masks
             if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
@@ -119,9 +119,9 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
 
             # Calculate the sum of the first 30% of rows
-            # if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
-            #     print("Sum of first 30% of rows is greater than 50")
-            #     continue 
+            if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
+                print("Sum of first 30% of rows is greater than 50")
+                continue 
 
             # on the floor and sum is greater than 130...
             # maybe on the floor can be filtered by indices..
@@ -167,6 +167,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 # latent_centroids.append(mean_features)
 
                 ## this is for the UMAP of the features
+                extracted_features = extracted_features.cpu().detach().numpy()
                 umap_features = umap_reducer.fit_transform(extracted_features)
                 umap_features = torch.from_numpy(umap_features.flatten())
                 print(f'umap_features shape: {umap_features.shape}')
