@@ -22,6 +22,9 @@ from CutLER.maskcut import img_save
 from CutLER.maskcut import downsample
 from typing import List
 
+from umap import UMAP
+umap_reducer = UMAP(n_components=1, random_state=42)
+
 # Image transformation applied to all images
 ToTensor = transforms.Compose([transforms.ToTensor(),
                                transforms.Normalize(
@@ -179,11 +182,19 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 extracted_features = feat[:, non_zero_indices]
                 # print(f'extracted_features shape: {extracted_features.shape}')
 
-                # Computing the mean of extracted features
-                # [TODO] potentially add clustering here
-                mean_features = torch.mean(extracted_features, dim=1)
-                latent_centroids.append(mean_features)
-                # print(f'mean_features shape: {mean_features.shape}')
+                # # Computing the mean of extracted features
+                # # [TODO] potentially add clustering here
+                # mean_features = torch.mean(extracted_features, dim=1)
+                # latent_centroids.append(mean_features)
+                # # print(f'mean_features shape: {mean_features.shape}')
+
+                extracted_features = extracted_features.cpu().detach().numpy()
+                umap_features = umap_reducer.fit_transform(extracted_features)
+                umap_features = torch.from_numpy(umap_features.flatten())
+                print(f'umap_features shape: {umap_features.shape}')
+                latent_centroids.append(umap_features)
+
+
 
                 img_save.save_numpy_array_as_image(down_pseudo_mask, "mask"+str(id)+".jpg")
             id = id + 1
