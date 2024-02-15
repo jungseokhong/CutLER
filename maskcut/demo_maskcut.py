@@ -194,6 +194,10 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             #     pseudo_mask_bool = resized_pseudo_mask.astype(bool)
             #     binary_mask += pseudo_mask_bool
 
+            input = vis_mask(input, resized_pseudo_mask, random_color(rgb=True))
+            if output_path != None:
+                input.save(os.path.join(output_path, "demo.jpg"))
+
             id += 1        
         
         
