@@ -46,7 +46,7 @@ from collections import defaultdict
 
 # Replace 'base_directory' with the path to your base directory where the folders are located
 base_directory = "/home/jungseok/data/zpool_dataset/2024-01-21-19-25-39_out/"
-output_file = "/home/jungseok/data/zpool_dataset/umap_similarity_rankings.txt"
+output_file = "/home/jungseok/data/zpool_dataset/umap_similarity_rankings_384_1.txt"
 
 
 # umap_reducer = UMAP(n_components=1)
@@ -65,7 +65,7 @@ def load_features_and_filenames(base_dir):
     return features_dict
 
 def reduce_dimensions_with_umap(features_dict):
-    umap_reducer = UMAP(n_components=10, random_state=42)
+    umap_reducer = UMAP(n_components=1, random_state=42)
     reduced_features_dict = {}
     for filename, features in features_dict.items():
         # Reduce dimensions of the loaded features using UMAP
