@@ -169,6 +169,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 ## this is for the UMAP of the features
                 umap_features = umap_reducer.fit_transform(extracted_features)
                 umap_features = torch.from_numpy(umap_features.flatten())
+                print(f'umap_features shape: {umap_features.shape}')
                 latent_centroids.append(umap_features)
 
                 img_save.save_numpy_array_as_image(down_pseudo_mask, "square_mask"+str(id)+"_"+str(non_zero_indices.shape[0])+".jpg")
