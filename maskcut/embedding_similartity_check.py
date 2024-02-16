@@ -38,8 +38,11 @@ from scipy.spatial.distance import cosine
 from collections import defaultdict
 
 # Replace 'base_directory' with the path to your base directory where the folders are located
-base_directory = "/home/jungseok/data/zpool_dataset/2024-01-21-19-25-39_out/"
-output_file = "/home/jungseok/data/zpool_dataset/similarity_rankings.txt"
+# base_directory = "/home/jungseok/data/zpool_dataset/2024-01-21-19-25-39_out/"
+# output_file = "/home/jungseok/data/zpool_dataset/similarity_rankings.txt"
+
+base_directory = "/home/jungseok/data/kelpie/kelpie_filtered_out/"
+output_file = "/home/jungseok/data/kelpie/similarity_rankings.txt"
 
 def load_features_and_filenames(base_dir):
     features_dict = {}

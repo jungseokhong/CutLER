@@ -2,9 +2,14 @@ import os
 from PIL import Image
 
 # Assuming your base directory where the folders are located is 'base_directory'
-base_directory = "/home/jungseok/data/zpool_dataset/2024-01-21-19-25-39_out/"
-base_directory2 = "/home/jungseok/data/zpool_dataset/stitched_images/"
-similarity_file = os.path.join(base_directory, 'similarity_rankings.txt')
+# base_directory = "/home/jungseok/data/zpool_dataset/2024-01-21-19-25-39_out/"
+# base_directory2 = "/home/jungseok/data/zpool_dataset/stitched_images/"
+# similarity_file = os.path.join(base_directory, 'similarity_rankings.txt')
+
+base_directory = "/home/jungseok/data/kelpie/kelpie_filtered_out/"
+base_directory1 = "/home/jungseok/data/kelpie/"
+base_directory2 = "/home/jungseok/data/kelpie/kelpie_stitched_images_mean/"
+similarity_file = os.path.join(base_directory1, 'similarity_rankings.txt')
 
 # def stitch_images(img1_path, img2_path, output_filename):
 #     """Stitch two images side by side and save the result."""
@@ -22,7 +27,7 @@ similarity_file = os.path.join(base_directory, 'similarity_rankings.txt')
 #     # Save the new image
 #     new_image.save(output_filename)
 
-def stitch_images(img1_path, img2_path, output_filename, scale_factor=0.1):
+def stitch_images(img1_path, img2_path, output_filename, scale_factor=0.3):
     """Stitch two images side by side, resize the result, and save it."""
     image1 = Image.open(img1_path)
     image2 = Image.open(img2_path)
