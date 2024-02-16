@@ -23,7 +23,7 @@ from CutLER.maskcut import downsample
 from typing import List
 
 from umap import UMAP
-umap_reducer = UMAP(n_components=1, random_state=42)
+umap_reducer = UMAP(n_components=3, random_state=42)
 
 # Image transformation applied to all images
 ToTensor = transforms.Compose([transforms.ToTensor(),
