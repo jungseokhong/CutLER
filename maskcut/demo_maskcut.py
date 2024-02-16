@@ -118,10 +118,10 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
             # Calculate the number of rows to consider (30% of total rows)
             num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
 
-            # Calculate the sum of the first 30% of rows
-            if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
-                print("Sum of first 30% of rows is greater than 50")
-                continue 
+            # # Calculate the sum of the first 30% of rows
+            # if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
+            #     print("Sum of first 30% of rows is greater than 50")
+            #     continue 
 
             # on the floor and sum is greater than 130...
             # maybe on the floor can be filtered by indices..
@@ -173,13 +173,13 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 # print(f'umap_features shape: {umap_features.shape}')
                 # latent_centroids.append(umap_features)
 
-                img_save.save_numpy_array_as_image(down_pseudo_mask, "square_mask"+str(id)+"_"+str(non_zero_indices.shape[0])+".jpg")
+                # img_save.save_numpy_array_as_image(down_pseudo_mask, "square_mask"+str(id)+"_"+str(non_zero_indices.shape[0])+".jpg")
 
                 centroid = find_centroid(resized_pseudo_mask)  # returns x, y
                 x_percent = centroid[0] / resized_pseudo_mask.shape[1]  # X?
                 y_percent = centroid[1] / resized_pseudo_mask.shape[0]  # Y?
                 pos_centroids.append([x_percent, y_percent])
-                img_save.save_numpy_array_as_image(resized_pseudo_mask, "resized_mask"+str(id)+"x"+str(x_percent)+"y"+str(y_percent)+"_"+str(non_zero_indices.shape[0])+".jpg")
+                # img_save.save_numpy_array_as_image(resized_pseudo_mask, "resized_mask"+str(id)+"x"+str(x_percent)+"y"+str(y_percent)+"_"+str(non_zero_indices.shape[0])+".jpg")
                 pseudo_mask_bool = resized_pseudo_mask.astype(bool)
                 binary_mask += pseudo_mask_bool
 
