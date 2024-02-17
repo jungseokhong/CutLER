@@ -107,17 +107,33 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
 
             # Heuristic filtering
 
-            # Check if edge values of pseudo_mask are 1
-            if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
-            np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
+            # # Check if edge values of pseudo_mask are 1
+            # if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
+            # np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
+            #     print("Edge values are 1")
+            #     continue  # Skip this mask if edge values are 1
+
+            if np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
                 print("Edge values are 1")
                 continue  # Skip this mask if edge values are 1
 
             # New code to filter out large pseudo_masks
-            if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
-                print("Mask is larger than 5 percent of total pixels")
+            if np.sum(pseudo_mask) > 0.1 * np.size(pseudo_mask):
+                print("Mask is larger than 10 percent of total pixels")
                 continue  # Skip this mask if it's larger than 5% of total pixels
-            
+
+            # Calculate the percentage of the bottom edge taken by the mask
+            bottom_row = pseudo_mask[-1, :]  # Get the bottom row
+            bottom_edge_ones = np.sum(bottom_row == 1)  # Count pixels set to 1
+            total_pixels_in_row = bottom_row.size  # Total pixels in the bottom row
+            percentage_of_ones = (bottom_edge_ones / total_pixels_in_row) * 100  # Calculate the percentage
+
+            # Check if more than 5% of the bottom edge is taken by the mask
+            if percentage_of_ones > 5:
+                print("More than 5% of the bottom edge is taken by the mask, skipping this mask.")
+                continue  # Skip further processing of this mask
+
+
             # Calculate the number of rows to consider (30% of total rows)
             num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
 
