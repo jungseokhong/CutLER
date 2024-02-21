@@ -146,10 +146,10 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
 
             # Check if the top half sum is greater than 5% of the total sum
             if top_half_percentage > 5:
-                print(f'filter fail: top_half_percentage: {top_half_percentage} and {filename}')
+                print(f'filter fail: top_half_percentage: {top_half_percentage}')
                 print("The sum of the top 50% of the rows is greater than 5% of the sum of the entire pseudo_mask, skipping this mask.")
                 continue  # Skip further processing of this mask
-            print(f'filter pass: top_half_percentage: {top_half_percentage} and {filename}')
+            print(f'filter pass: top_half_percentage: {top_half_percentage}')
 
             if np.sum(pseudo_mask[80:421,:])/(340*480)> 0.069:
                 print("Sum of the middle 80% of rows is greater than 6.9%")
