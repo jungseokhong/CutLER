@@ -118,7 +118,7 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 continue  # Skip this mask if edge values are 1
 
             # New code to filter out large pseudo_masks
-            if np.sum(pseudo_mask) > 0.1 * np.size(pseudo_mask):
+            if np.sum(pseudo_mask) > 0.1 * 480*480:
                 print("Mask is larger than 10 percent of total pixels")
                 continue  # Skip this mask if it's larger than 5% of total pixels
 
@@ -133,6 +133,27 @@ def maskcut_demo(extractor, imgs: List[Image.Image], backbone, patch_size, tau, 
                 print("More than 5% of the bottom edge is taken by the mask, skipping this mask.")
                 continue  # Skip further processing of this mask
 
+
+            # Calculate the sum of the top 50% of the rows
+            rows_to_consider = int(pseudo_mask.shape[0] * 0.5)
+            top_half_sum = np.sum(pseudo_mask[:rows_to_consider])
+
+            # Calculate the sum of the entire pseudo_mask
+            total_half_sum = 480*480*0.5
+
+            # Calculate the percentage of the top half sum relative to the total sum
+            top_half_percentage = (top_half_sum / total_half_sum) * 100
+
+            # Check if the top half sum is greater than 5% of the total sum
+            if top_half_percentage > 5:
+                print(f'filter fail: top_half_percentage: {top_half_percentage} and {filename}')
+                print("The sum of the top 50% of the rows is greater than 5% of the sum of the entire pseudo_mask, skipping this mask.")
+                continue  # Skip further processing of this mask
+            print(f'filter pass: top_half_percentage: {top_half_percentage} and {filename}')
+
+            if np.sum(pseudo_mask[80:421,:])/(340*480)> 0.069:
+                print("Sum of the middle 80% of rows is greater than 6.9%")
+                continue
 
             # Calculate the number of rows to consider (30% of total rows)
             num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
