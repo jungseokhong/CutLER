@@ -52,6 +52,25 @@ def find_centroid(pseudo_mask):
     centroid = (int(M[1]), int(M[0]))  # (x, y) format
     return centroid
 
+def check_edges_for_ones(pseudo_mask):
+    """
+    Check if there is any row in the pseudo_mask that has 1s on both
+    the left-most and right-most columns.
+
+    Args:
+    pseudo_mask (numpy.ndarray): A 2D numpy array where non-zero values
+                                 represent the mask.
+
+    Returns:
+    bool: True if there is at least one row with 1s on both edges, else False.
+    """
+    # Iterate through each row in the pseudo_mask
+    for row in pseudo_mask:
+        if row[0] == 1 and row[-1] == 1:
+            return True
+    return False
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('MaskCut Demo')
     # default arguments
@@ -135,27 +154,35 @@ if __name__ == "__main__":
 
                 # Heuristic filtering
 
-                # Check if edge values of pseudo_mask are 1
-                if np.any(pseudo_mask[0, :] == 1) or np.any(pseudo_mask[-1, :] == 1) or \
-                np.any(pseudo_mask[:, 0] == 1) or np.any(pseudo_mask[:, -1] == 1):
-                    print("Edge values are 1")
-                    continue  # Skip this mask if edge values are 1
+                # # Check if edge values of pseudo_mask are 1
+                # if np.any(pseudo_mask[0, :] == 1) and np.any(pseudo_mask[-1, :] == 1):
+                #     print("side Edge values are 1")
+                #     # continue  # Skip this mask if edge values are 1
+                #     pass
+
+                if check_edges_for_ones(pseudo_mask):
+                    print("Found a row with 1s on both left-most and right-most columns.")
+                    continue
 
                 # New code to filter out large pseudo_masks
-                if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
-                    print("Mask is larger than 5 percent of total pixels")
-                    continue  # Skip this mask if it's larger than 5% of total pixels
+                # if np.sum(pseudo_mask) > 0.05 * np.size(pseudo_mask):
+                    # print("Mask is larger than 5 percent of total pixels")
+                    # continue  # Skip this mask if it's larger than 5% of total pixels
+                    # pass
                 
+                if np.sum(pseudo_mask) > 0.4 * 480*480:
+                    print("Mask is larger than 40 percent of total pixels")
+                    continue  # Skip this mask if it's larger than 5% of total pixels
+
+
                 # Calculate the number of rows to consider (30% of total rows)
                 num_rows_to_consider = int(np.ceil(pseudo_mask.shape[0] * 0.3))
 
-                # Calculate the sum of the first 30% of rows
-                if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
-                    print("Sum of first 30% of rows is greater than 50")
-                    continue 
-
-                # on the floor and sum is greater than 130...
-                # maybe on the floor can be filtered by indices..
+                # # Calculate the sum of the first 30% of rows
+                # if np.sum(pseudo_mask[:num_rows_to_consider]) > 50:
+                #     print("Sum of first 30% of rows is greater than 50")
+                #     # continue
+                #     pass 
 
 
                 pseudo_mask = Image.fromarray(np.uint8(pseudo_mask*255))
